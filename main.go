@@ -5,6 +5,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"io/ioutil"
 	"log"
+	"net/url"
 	"os"
 	"time"
 )
@@ -36,7 +37,18 @@ func main() {
 
 	router.Any("/github/*path", func(c *gin.Context) {
 		path := c.Param("path")
-		queryParams := c.Request.URL.Query()
+		queryParams := make(url.Values)
+
+		// We filter out all empty query params, as Golang encodes a query param
+		// with key of `x` as `x=`, while the GitHub API expects `x`.
+		for key := range c.Request.URL.Query() {
+			val := c.Request.URL.Query().Get(key)
+			if val == "" {
+				continue
+			}
+
+			queryParams.Add(key, val)
+		}
 
 		log.Printf("Request Method: %s", c.Request.Method)
 		log.Printf("Request Path: %s", path)
